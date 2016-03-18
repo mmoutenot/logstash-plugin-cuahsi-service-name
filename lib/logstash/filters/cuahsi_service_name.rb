@@ -12,8 +12,8 @@ require "pry"
 # [source,ruby]
 #     filter {
 #       cuahsi_service_name {
-#         id_field => ['query_params']['n']
-#         target => ['query_params']['service_name']
+#         id_field => "[query_params][n]"
+#         target => "[query_params][service_name]"
 #       }
 #     }
 #
