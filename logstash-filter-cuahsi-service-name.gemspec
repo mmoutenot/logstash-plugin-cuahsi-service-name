@@ -1,6 +1,6 @@
 Gem::Specification.new do |s|
 
-  s.name            = 'logstash-filter-cuahsi-logstash-network'
+  s.name            = 'logstash-filter-cuahsi-service-name'
   s.version         = '2.1.0'
   s.licenses        = ['Apache License (2.0)']
   s.summary         = "This filter will resolve any IP addresses from a field of your choosing."
