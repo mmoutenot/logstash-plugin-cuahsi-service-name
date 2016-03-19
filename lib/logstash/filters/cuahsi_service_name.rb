@@ -13,7 +13,7 @@ require "pry"
 #     filter {
 #       cuahsi_service_name {
 #         id_field => "[query_params][n]"
-#         target => "[query_params][service_name]"
+#         target => "[query_params][service_names]"
 #       }
 #     }
 #
@@ -50,9 +50,15 @@ class LogStash::Filters::CUAHSI_SERVICE_NAME < LogStash::Filters::Base
 
   private
   def resolve(event)
-    id = event[@id_field]
-    name = @service_names_by_id[id]
-    event[@target] = name
+    rawIds = event[@id_field]
+    return if rawIds == nil
+
+    ids = rawIds.split(',')
+    names = ids.map do |id|
+      @service_names_by_id[id]
+    end
+
+    event[@target] = names
   end
 
 end
