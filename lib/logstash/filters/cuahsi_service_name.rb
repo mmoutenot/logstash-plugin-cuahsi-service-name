@@ -28,7 +28,22 @@ class LogStash::Filters::CUAHSI_SERVICE_NAME < LogStash::Filters::Base
     require 'open-uri'
     require 'nokogiri'
 
+    updateNameHash()
+  end
+
+  public
+  def filter(event)
+    return if resolve(event).nil?
+    filter_matched(event)
+  end
+
+  public
+  def updateNameHash
+    # short circuit if we updated less than a minute ago
+    return false if @lastUpdated && @lastUpdated > Time.now - 60
+
     xml = Nokogiri::XML(open('http://hiscentral.cuahsi.org/webservices/hiscentral.asmx/GetWaterOneFlowServiceInfo'))
+    @lastUpdated = Time.now()
     @service_names_by_id = {}
     xml.css('ServiceInfo').map do |info|
       service_id = info.at('ServiceID').text
@@ -38,24 +53,28 @@ class LogStash::Filters::CUAHSI_SERVICE_NAME < LogStash::Filters::Base
       else
         @logger.warn("CUAHSI_SERVICE_NAME: invalid pair received from network request")
       end
-
     end
-  end # def register
 
-  public
-  def filter(event)
-    return if resolve(event).nil?
-    filter_matched(event)
+    return true
   end
 
   private
+
   def resolve(event)
     rawIds = event[@id_field]
     return if rawIds == nil
 
     ids = rawIds.split(',')
     names = ids.map do |id|
-      @service_names_by_id[id]
+      name = @service_names_by_id[id]
+
+      # repoll service info if we have an id not in the local cache
+      if !name
+        updateNameHash()
+        name = @service_names_by_id[id]
+      end
+
+      name
     end
 
     event[@target] = names
