@@ -12,7 +12,7 @@ require "pry"
 # [source,ruby]
 #     filter {
 #       cuahsi_service_name {
-#         id_field => "[query_params][n]"
+#         id_fields => ["[query_params][n]"]
 #         target => "[query_params][service_names]"
 #       }
 #     }
@@ -20,7 +20,7 @@ require "pry"
 class LogStash::Filters::CUAHSI_SERVICE_NAME < LogStash::Filters::Base
   config_name "cuahsi_service_name"
 
-  config :id_field, :validate => :string, :required => true
+  config :id_fields, :validate => :array, :required => true
   config :target, :validate => :string, :required => true
 
   public
@@ -61,23 +61,27 @@ class LogStash::Filters::CUAHSI_SERVICE_NAME < LogStash::Filters::Base
   private
 
   def resolve(event)
-    rawIds = event[@id_field]
-    return if rawIds == nil
+    names = @id_fields.map do |id_field|
 
-    ids = rawIds.split(',')
-    names = ids.map do |id|
-      name = @service_names_by_id[id]
+      rawIds = event[id_field]
 
-      # repoll service info if we have an id not in the local cache
-      if !name
-        updateNameHash()
+      return if rawIds == nil
+
+      ids = rawIds.split(',').map(&:strip)
+      ids.map do |id|
         name = @service_names_by_id[id]
-      end
 
-      name
+        # repoll service info if we have an id not in the local cache
+        if !name
+          updateNameHash()
+          name = @service_names_by_id[id]
+        end
+
+        name.strip if name
+      end
     end
 
-    event[@target] = names
+    event[@target] = names.flatten()
   end
 
 end

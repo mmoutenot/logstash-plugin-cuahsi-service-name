@@ -9,7 +9,7 @@ describe LogStash::Filters::CUAHSI_SERVICE_NAME do
     config <<-CONFIG
       filter {
         cuahsi_service_name {
-          id_field => "[service_id]"
+          id_fields => ["[service_id]"]
           target => "[test_target]"
         }
       }
@@ -22,29 +22,32 @@ describe LogStash::Filters::CUAHSI_SERVICE_NAME do
     sample({}) do
       insist { subject.include?("test_target") } == false
     end
+
+    sample("service_id" => "3555,1") do
+      insist { subject["test_target"] } == ["GLEON_Dorset", "NWISDV"]
+    end
   end
 
-  describe 'list' do
+  describe 'multiple id fields' do
     config <<-CONFIG
       filter {
         cuahsi_service_name {
-          id_field => "[service_ids]"
+          id_fields => ["[service_id]", "[network_id]"]
           target => "[test_target]"
         }
       }
     CONFIG
 
-    sample("service_ids" => "3555,1") do
-      insist { subject["test_target"] } == ["GLEON_Dorset", "NWISDV"]
+    sample("service_id" => "3555,5594", "network_id" => "1") do
+      insist { subject["test_target"] } == ["GLEON_Dorset", "GLEON_LakeAnnie", "NWISDV"]
     end
   end
 
   describe 'nested' do
-
     config <<-CONFIG
       filter {
         cuahsi_service_name {
-          id_field => "[val][service_id]"
+          id_fields => ["[val][service_id]"]
           target => "[val][test_target]"
         }
       }
@@ -64,7 +67,7 @@ describe LogStash::Filters::CUAHSI_SERVICE_NAME do
     end
 
     context 'one event' do
-      let(:config) { { "id_field" => "[service_id]", "target" => "[service_names]" } }
+      let(:config) { { "id_fields" => ["[service_id]"], "target" => "[service_names]" } }
 
       it "should request a new service name hash" do
         expect(subject).to receive(:updateNameHash).once
@@ -73,7 +76,7 @@ describe LogStash::Filters::CUAHSI_SERVICE_NAME do
     end
 
     context 'two events' do
-      let(:config) { { "id_field" => "[service_id]", "target" => "[service_names]" } }
+      let(:config) { { "id_fields" => ["[service_id]"], "target" => "[service_names]" } }
 
       it "should not request a new service name hash too often" do
         # because the register calls the update, it should return false
