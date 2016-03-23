@@ -33,7 +33,7 @@ class LogStash::Filters::CUAHSI_SERVICE_NAME < LogStash::Filters::Base
 
   public
   def filter(event)
-    return if resolve(event).nil?
+    return if resolve(event).empty?
     filter_matched(event)
   end
 
@@ -65,7 +65,7 @@ class LogStash::Filters::CUAHSI_SERVICE_NAME < LogStash::Filters::Base
 
       rawIds = event[id_field]
 
-      return if rawIds == nil
+      next if rawIds == nil
 
       ids = rawIds.split(',').map(&:strip)
       ids.map do |id|
@@ -81,7 +81,9 @@ class LogStash::Filters::CUAHSI_SERVICE_NAME < LogStash::Filters::Base
       end
     end
 
-    event[@target] = names.flatten()
+    names = names.flatten.compact
+    event[@target] = names if names && names.length > 0
+    names
   end
 
 end

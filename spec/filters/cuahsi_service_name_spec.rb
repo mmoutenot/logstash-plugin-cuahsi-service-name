@@ -32,14 +32,18 @@ describe LogStash::Filters::CUAHSI_SERVICE_NAME do
     config <<-CONFIG
       filter {
         cuahsi_service_name {
-          id_fields => ["[service_id]", "[network_id]"]
+          id_fields => ["[service_id]", "[network_id]", "[params][n]"]
           target => "[test_target]"
         }
       }
     CONFIG
 
-    sample("service_id" => "3555,5594", "network_id" => "1") do
-      insist { subject["test_target"] } == ["GLEON_Dorset", "GLEON_LakeAnnie", "NWISDV"]
+    sample("service_id" => "3555,5594", "network_id" => "1", "params" => { "n" => "1" }) do
+      insist { subject["test_target"] } == ["GLEON_Dorset", "GLEON_LakeAnnie", "NWISDV", "NWISDV"]
+    end
+
+    sample("service_id" => "3555,5594") do
+      insist { subject["test_target"] } == ["GLEON_Dorset", "GLEON_LakeAnnie"]
     end
   end
 
